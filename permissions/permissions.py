@@ -455,7 +455,9 @@ class Permissions:
             log.debug("chanid {} not found, chan_perm = True".format(
                 channel.id))
             channel_perm = True
+            channel_perm_default = True
         else:
+            channel_perm_default = False
             # We know that an admin has set permission on this channel
             if self._is_allow(channel_perm_dict[channel.id]):
                 log.debug("chanid {} found and allowed".format(channel.id))
@@ -486,7 +488,8 @@ class Permissions:
                     (role_perm is True)) and not is_locked
         log.debug("uid {} has perm: {}".format(ctx.message.author.id,
                                                has_perm))
-        return has_perm
+
+        return (channel_perm and not channel_perm_default) or has_perm
 
     def _save_perms(self):
         dataIO.save_json('data/permissions/perms.json', self.perms_we_want)
@@ -568,11 +571,11 @@ class Permissions:
                 isinstance(ctx.invoked_subcommand, commands.Group):
             await send_cmd_help(ctx)
 
-    @channel.command(pass_context=True, name="allow", hidden=True)
+    @channel.command(pass_context=True, name="allow")
     async def channel_allow(self, ctx, command, channel: discord.Channel=None):
         """Explicitly allows [command/cog] to be used in [channel].
 
-        Not really useful because role perm overrides channel perm"""
+        Allowing a command with this will override any other permission."""
         server = ctx.message.server
         try:
             command_obj = self._get_command(command)
